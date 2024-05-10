@@ -137,4 +137,4 @@ jobs:
         export PYTEST_TIMEOUT=600
         source venv/bin/activate
         ls -al
-        pytest -n=5 circular/test_*.py
+        pytest -n=5 tests/test_*.py
