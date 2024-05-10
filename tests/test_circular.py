@@ -5,6 +5,7 @@ import time
 
 from pyln.testing.fixtures import *  # noqa: F403
 from pyln.testing.utils import only_one, sync_blockheight, wait_for
+
 from util import get_plugin  # noqa: F401
 
 LOGGER = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ def test_circular(node_factory, bitcoind, get_plugin):  # noqa: F811
     cl3 = l3.rpc.listpeerchannels(l1.info["id"])["channels"][0][
         "short_channel_id"
     ]
-
+    LOGGER.info(f"{cl1} {cl2} {cl3}")
     for n in [l1, l2, l3]:
         for scid in [cl1, cl2, cl3]:
             n.wait_channel_active(scid)
@@ -45,7 +46,9 @@ def test_circular(node_factory, bitcoind, get_plugin):  # noqa: F811
     #      cl1       cl2       cl3
 
     # wait for plugin gossip refresh
-    time.sleep(5)
+    wait_for(lambda: len(l1.rpc.listchannels()["channels"]) == 6)
+    wait_for(lambda: len(l2.rpc.listchannels()["channels"]) == 6)
+    wait_for(lambda: len(l3.rpc.listchannels()["channels"]) == 6)
 
     l1.rpc.call(
         "plugin",
@@ -65,8 +68,8 @@ def test_circular(node_factory, bitcoind, get_plugin):  # noqa: F811
             "inscid": cl3,
             "outscid": cl1,
             "amount": 100_000,
-            "splitamount": 25000,
             "maxppm": 1000,
+            "attempts": 1,
         },
     )
     # expected graph:
@@ -113,7 +116,7 @@ def test_circular(node_factory, bitcoind, get_plugin):  # noqa: F811
         "circular-push",
         {
             "outscid": cl1,
-            "minoutppm": 0,
+            "inlist": [l3.info["id"]],
             "amount": 100_000,
             "splitamount": 25000,
             "maxppm": 1000,
